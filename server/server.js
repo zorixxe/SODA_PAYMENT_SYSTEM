@@ -33,7 +33,6 @@ const pool = new Pool({
   CREATE TABLE IF NOT EXISTS soda ( -- no need for quotes if your table name is lowercase
       id varchar PRIMARY KEY,
       credits integer,
-      admin boolean,
       name text
   );
   `;
@@ -130,6 +129,62 @@ app.put('/update-credits/:nfcId/:credits', async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+app.put('/modify-credits/:userName/:creditsToAdd', async (req, res) => {
+  const userName = req.params.userName;
+  const creditsToAdd = parseInt(req.params.creditsToAdd);
+  console.log('Modifying credits for user:', userName);
+  console.log('Credits to add:', creditsToAdd);
+  try {
+      // Fetch the user's current credits
+      const queryResult = await pool.query('SELECT credits FROM soda WHERE LOWER(name) = LOWER($1)', [userName]);
+      console.log('Query result:', queryResult.rows);
+      if (queryResult.rows.length > 0) {
+          const currentCredits = queryResult.rows[0].credits;
+          const updatedCredits = currentCredits + creditsToAdd;
+          // Update user's credits in the database
+          await pool.query('UPDATE soda SET credits = $1 WHERE LOWER(name) = LOWER($2)', [updatedCredits, userName]);
+          console.log('Credits updated successfully.');
+          res.sendStatus(200);
+      } else {
+          console.log('User not found.');
+          res.status(404).json({ error: 'User not found' });
+      }
+  } catch (err) {
+      console.error('Database error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/add-user', async (req, res) => {
+  const { id, name } = req.body;
+  console.log('Adding user:', name, 'with ID:', id);
+  if (!id || !name) {
+      res.status(400).json({ error: 'ID and name are required' });
+      return;
+  }
+  try {
+      // Check if the user already exists
+      const userExistsQuery = await pool.query('SELECT EXISTS(SELECT 1 FROM soda WHERE id = $1)', [id]);
+      const userExists = userExistsQuery.rows[0].exists;
+      if (userExists) {
+          res.status(409).json({ error: 'User already exists' });
+          return;
+      }
+      // Insert the new user into the database
+      await pool.query('INSERT INTO soda (id, name) VALUES ($1, $2)', [id, name]);
+      console.log('User added successfully.');
+      res.sendStatus(201); // 201: Created
+  } catch (err) {
+      console.error('Database error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
+
+
 
 
 
