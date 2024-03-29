@@ -62,3 +62,24 @@ body, html {
 #option4 {
     background-color: #F033FF; /* Purple */
 }
+#nfc-input {
+    position: absolute;
+    left: -9999px;
+  }
+
+  /* Add styles for logout button */
+.logout-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #f00;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background-color: #d00;
+}
