@@ -83,6 +83,43 @@ app.get('/check-id/:nfcId', async (req, res) => {
   }
 });
 
+app.get('/get-credits/:nfcId', async (req, res) => {
+  const nfcId = req.params.nfcId;
+  try {
+      // Fetch user's credits from the database based on the NFC ID
+      const queryResult = await pool.query('SELECT credits FROM soda WHERE id = $1', [nfcId]);
+      if (queryResult.rows.length > 0) {
+          const credits = queryResult.rows[0].credits; // Assuming the user's credits are in the first row
+          // Send the credits as a JSON response
+          res.json({ credits });
+      } else {
+          res.status(404).json({ error: 'No record found with the given NFC ID' });
+      }
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/get-user-info/:nfcId', async (req, res) => {
+  const nfcId = req.params.nfcId;
+  try {
+      const queryResult = await pool.query('SELECT name, credits FROM soda WHERE id = $1', [nfcId]);
+      if (queryResult.rows.length > 0) {
+          const userInfo = {
+              name: queryResult.rows[0].name,
+              credits: queryResult.rows[0].credits
+          };
+          res.json(userInfo);
+      } else {
+          res.status(404).json({ error: 'No record found with the given NFC ID' });
+      }
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 
   
 

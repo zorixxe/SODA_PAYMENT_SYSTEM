@@ -4,9 +4,10 @@ body, html {
     display: flex;
     justify-content: center; /* Centers horizontally */
     align-items: center; /* Centers vertically */
-    background-color: #f0f0f0;
     background-color: rgb(30, 34, 170);
+    position: relative; /* Add position relative here */
 }
+
 #logo {
     height: auto;
     position: fixed;
@@ -20,14 +21,12 @@ body, html {
     pointer-events: none; /* Ignores all mouse events */
 }
 
-
 .button-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr); 
-    gap: 80px; 
+    gap: 20px; /* Adjust gap as needed */
     width: auto; 
     padding: 20px; 
-    position: relative;
     z-index: 0;
 }
 
@@ -39,9 +38,8 @@ body, html {
     color: white;
     cursor: pointer;
     transition: transform 0.2s;
-
+    height: 150px; /* Set the height of the buttons */
 }
-
 
 .option-button:hover {
     transform: scale(1.05);
@@ -62,12 +60,13 @@ body, html {
 #option4 {
     background-color: #F033FF; /* Purple */
 }
+
 #nfc-input {
     position: absolute;
     left: -9999px;
-  }
+}
 
-  /* Add styles for logout button */
+/* Add styles for logout button */
 .logout-button {
     position: fixed;
     top: 20px;
@@ -82,4 +81,26 @@ body, html {
 
 .logout-button:hover {
     background-color: #d00;
+}
+
+.credits-bar {
+    background-color: white;
+    height: 50px; /* Adjust the height as needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute; /* Change position to absolute */
+    width: 100%; /* Make it span the full width */
+    top: 0; /* Position it at the top */
+    z-index: 1; /* Ensure it's above other elements */
+    margin-bottom: 20px; /* Add margin-bottom to create space between credits bar and buttons */
+}
+
+#user-credits {
+    font-size: 18px; /* Adjust the font size as needed */
+    margin-right: 10px; /* Add margin to separate credits from name */
+}
+
+#user-name {
+    font-size: 18px; /* Adjust the font size as needed */
 }
