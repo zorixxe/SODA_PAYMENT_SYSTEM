@@ -118,6 +118,20 @@ app.get('/get-user-info/:nfcId', async (req, res) => {
   }
 });
 
+app.put('/update-credits/:nfcId/:credits', async (req, res) => {
+  const nfcId = req.params.nfcId;
+  const credits = req.params.credits;
+  try {
+      // Update user's credits in the database
+      await pool.query('UPDATE soda SET credits = $1 WHERE id = $2', [credits, nfcId]);
+      res.sendStatus(200);
+  } catch (err) {
+      console.error('Database error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 
 
 

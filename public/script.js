@@ -2,6 +2,16 @@
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    let logoutTimer; // Variable to store the logout timer
+
+    // Function to reset the logout timer
+    function resetLogoutTimer() {
+        clearTimeout(logoutTimer); // Clear the previous timer
+        logoutTimer = setTimeout(() => {
+            handleLogout(); // Logout the user after 2 minutes of inactivity
+        }, 2 * 60 * 1000); // 2 minutes in milliseconds
+    }
+
     const nfcInput = document.getElementById('nfc-input');
     if (nfcInput) {
         setInterval(() => {
@@ -35,10 +45,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const optionButtons = document.querySelectorAll('.option-button');
     optionButtons.forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
             console.log(`${button.id} was clicked`);
-            // On the logged-in page, clicking an option logs you out
-            handleLogout();
+            const nfcId = localStorage.getItem('nfcId');
+            if (nfcId) {
+                try {
+                    // Fetch user's credits from the database
+                    const response = await fetch(`http://localhost:3000/get-credits/${encodeURIComponent(nfcId)}`);
+                    const data = await response.json();
+                    const userCredits = data.credits;
+                    if (userCredits > 0) {
+                        // If user has enough credits, subtract one
+                        const updatedCredits = userCredits - 1;
+                        // Update the user's credits in the database
+                        const updateResponse = await fetch(`http://localhost:3000/update-credits/${encodeURIComponent(nfcId)}/${updatedCredits}`, { method: 'PUT' });
+                        if (updateResponse.ok) {
+                            console.log('Credits updated successfully.');
+                            /* REEEEEEEEEEE WANT SODA REEEEEEEEEEE BIRA REEEEEEEEEEE BÄRS */
+                            handleLogout();
+                        } else {
+                            console.error('Failed to update credits.');
+                        }
+                    } else {
+                        alert('Insufficient credits. Please recharge your account.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            } else {
+                console.error('NFC ID not found.');
+            }
         });
     });
 
@@ -52,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if the scanned NFC ID is valid before calling displayUserCredits
     if (scannedNfcId) {
         displayUserInfo(scannedNfcId);
+        resetLogoutTimer();
     }
 });
 async function displayUserInfo(nfcId) {
@@ -62,7 +99,7 @@ async function displayUserInfo(nfcId) {
         const name = data.name;
         const creditsDisplay = document.getElementById('user-credits');
         const nameDisplay = document.getElementById('user-name');
-        creditsDisplay.textContent = `Credits: ${credits} `;
+        creditsDisplay.textContent = `Credits: ${credits}`;
         nameDisplay.textContent = `Name: ${name}`;
     } catch (error) {
         console.error('Error fetching user info:', error);
