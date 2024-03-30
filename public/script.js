@@ -1,15 +1,11 @@
-
-
-
 document.addEventListener('DOMContentLoaded', () => {
-    let logoutTimer; // Variable to store the logout timer
+    let logoutTimer;
 
-    // Function to reset the logout timer
     function resetLogoutTimer() {
-        clearTimeout(logoutTimer); // Clear the previous timer
+        clearTimeout(logoutTimer);
         logoutTimer = setTimeout(() => {
-            handleLogout(); // Logout the user after 2 minutes of inactivity
-        }, 2 * 60 * 1000); // 2 minutes in milliseconds
+            handleLogout();
+        }, 2 * 60 * 1000);
     }
 
     const nfcInput = document.getElementById('nfc-input');
@@ -18,26 +14,24 @@ document.addEventListener('DOMContentLoaded', () => {
             nfcInput.focus();
         }, 1000);
 
-        nfcInput.addEventListener('keydown', function(event) {
+        nfcInput.addEventListener('keydown', async (event) => {
             if (event.key === 'Enter') {
-                var nfcId = this.value.trim();
-                console.log("NFC ID: " + nfcId);
-                fetch(`http://localhost:3000/check-id/${encodeURIComponent(nfcId)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.exists) {
-                            console.log('ID exists. Access granted.');
-                            localStorage.setItem('nfcId', nfcId);
-                            window.location.href = './logged_in/index.html';
-                        } else {
-                            alert('ID does not exist. Access denied.');
-                        }
-                        this.value = ''; // Clear the input
-                    })
-                    .catch(error => {
-                        console.error('Error verifying NFC ID:', error);
-                        this.value = ''; // Clear the input
-                    });
+                const nfcId = nfcInput.value.trim();
+                try {
+                    const response = await fetch(`http://localhost:3000/check-id/${encodeURIComponent(nfcId)}`);
+                    const data = await response.json();
+                    if (data.exists) {
+                        console.log('ID exists. Access granted.');
+                        localStorage.setItem('nfcId', nfcId);
+                        window.location.href = './logged_in/index.html';
+                    } else {
+                        alert('ID does not exist. Access denied.');
+                    }
+                    nfcInput.value = '';
+                } catch (error) {
+                    console.error('Error verifying NFC ID:', error);
+                    nfcInput.value = '';
+                }
                 event.preventDefault();
             }
         });
@@ -50,19 +44,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const nfcId = localStorage.getItem('nfcId');
             if (nfcId) {
                 try {
-                    // Fetch user's credits from the database
                     const response = await fetch(`http://localhost:3000/get-credits/${encodeURIComponent(nfcId)}`);
                     const data = await response.json();
                     const userCredits = data.credits;
                     if (userCredits > 0) {
-                        // If user has enough credits, subtract one
-                        const updatedCredits = userCredits - 1;
-                        // Update the user's credits in the database
-                        const updateResponse = await fetch(`http://localhost:3000/update-credits/${encodeURIComponent(nfcId)}/${updatedCredits}`, { method: 'PUT' });
+                        // No need to calculate updatedCredits here
+                        // Just call the update endpoint
+                        const updateResponse = await fetch(`http://localhost:3000/update-credits/${encodeURIComponent(nfcId)}`, { method: 'PUT' });
                         if (updateResponse.ok) {
                             console.log('Credits updated successfully.');
-                            /* REEEEEEEEEEE WANT SODA REEEEEEEEEEE BIRA REEEEEEEEEEE BÄRS */
-                            handleLogout();
+                            handleLogout(); // Ensure this function is defined to handle the logout process
                         } else {
                             console.error('Failed to update credits.');
                         }
@@ -77,38 +68,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+    
 
     const manualLogoutButton = document.getElementById('logout-button');
     if (manualLogoutButton) {
         manualLogoutButton.addEventListener('click', handleLogout);
     }
 
-    // Get the scanned NFC ID from localStorage
     const scannedNfcId = localStorage.getItem('nfcId');
-    // Check if the scanned NFC ID is valid before calling displayUserCredits
     if (scannedNfcId) {
         displayUserInfo(scannedNfcId);
         resetLogoutTimer();
     }
 });
+
 async function displayUserInfo(nfcId) {
     try {
         const response = await fetch(`http://localhost:3000/get-user-info/${encodeURIComponent(nfcId)}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch user info');
+        }
         const data = await response.json();
         const credits = data.credits;
+        const cans = data.cans; // Add this line to retrieve the cans
         const name = data.name;
         const creditsDisplay = document.getElementById('user-credits');
+        const cansDisplay = document.getElementById('user-cans'); // Make sure you have an element with this ID in your HTML
         const nameDisplay = document.getElementById('user-name');
+        
         creditsDisplay.textContent = `Credits: ${credits}`;
+        cansDisplay.textContent = `Cans bought: ${cans}`; // Update this line to display the cans
         nameDisplay.textContent = `Name: ${name}`;
     } catch (error) {
         console.error('Error fetching user info:', error);
     }
 }
 
+
 function handleLogout() {
     console.log('Logging out...');
     localStorage.setItem('nfcId', '');
-    // Redirect to the index.html page
     window.location.href = '../index.html';
 }

@@ -86,12 +86,12 @@ app.get('/check-id/:nfcId', async (req, res) => {
 app.get('/get-credits/:nfcId', async (req, res) => {
   const nfcId = req.params.nfcId;
   try {
-      // Fetch user's credits from the database based on the NFC ID
-      const queryResult = await pool.query('SELECT credits FROM soda WHERE id = $1', [nfcId]);
+      // Fetch user's credits and cans from the database based on the NFC ID
+      const queryResult = await pool.query('SELECT credits, cans FROM soda WHERE id = $1', [nfcId]);
       if (queryResult.rows.length > 0) {
-          const credits = queryResult.rows[0].credits; // Assuming the user's credits are in the first row
-          // Send the credits as a JSON response
-          res.json({ credits });
+          const { credits, cans } = queryResult.rows[0];
+          // Send the credits and cans as a JSON response
+          res.json({ credits, cans });
       } else {
           res.status(404).json({ error: 'No record found with the given NFC ID' });
       }
@@ -100,14 +100,55 @@ app.get('/get-credits/:nfcId', async (req, res) => {
   }
 });
 
+
+
+app.put('/update-credits/:nfcId', async (req, res) => {
+  const nfcId = req.params.nfcId;
+  try {
+      // Start a database transaction
+      await pool.query('BEGIN');
+      
+      // Fetch the current user's credits
+      const selectResult = await pool.query('SELECT credits FROM soda WHERE id = $1 FOR UPDATE', [nfcId]);
+      if (selectResult.rows.length === 0) {
+        // If the user doesn't exist, rollback and return an error
+        await pool.query('ROLLBACK');
+        return res.status(404).json({ error: 'No record found with the given NFC ID' });
+      }
+
+      const currentCredits = selectResult.rows[0].credits;
+      if (currentCredits > 0) {
+        // Decrement credits by 1 and increment cans by 1
+        const updateCredits = currentCredits - 1;
+        const updateQuery = 'UPDATE soda SET credits = $1, cans = cans + 1 WHERE id = $2';
+        await pool.query(updateQuery, [updateCredits, nfcId]);
+        
+        // Commit the transaction
+        await pool.query('COMMIT');
+        res.sendStatus(200);
+      } else {
+        // If not enough credits, rollback and send an error
+        await pool.query('ROLLBACK');
+        res.status(400).json({ error: 'Insufficient credits' });
+      }
+  } catch (err) {
+      // If any error occurs, rollback the transaction
+      await pool.query('ROLLBACK');
+      console.error('Database error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 app.get('/get-user-info/:nfcId', async (req, res) => {
   const nfcId = req.params.nfcId;
   try {
-      const queryResult = await pool.query('SELECT name, credits FROM soda WHERE id = $1', [nfcId]);
+      const queryResult = await pool.query('SELECT name, credits, cans FROM soda WHERE id = $1', [nfcId]);
       if (queryResult.rows.length > 0) {
           const userInfo = {
               name: queryResult.rows[0].name,
-              credits: queryResult.rows[0].credits
+              credits: queryResult.rows[0].credits,
+              cans: queryResult.rows[0].cans 
           };
           res.json(userInfo);
       } else {
@@ -117,20 +158,6 @@ app.get('/get-user-info/:nfcId', async (req, res) => {
       res.status(500).json({ error: err.message });
   }
 });
-
-app.put('/update-credits/:nfcId/:credits', async (req, res) => {
-  const nfcId = req.params.nfcId;
-  const credits = req.params.credits;
-  try {
-      // Update user's credits in the database
-      await pool.query('UPDATE soda SET credits = $1 WHERE id = $2', [credits, nfcId]);
-      res.sendStatus(200);
-  } catch (err) {
-      console.error('Database error:', err);
-      res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 
 app.put('/modify-credits/:userName/:creditsToAdd', async (req, res) => {
   // Directly extracting parameters from the request

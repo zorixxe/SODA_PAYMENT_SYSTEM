@@ -104,3 +104,8 @@ body, html {
 #user-name {
     font-size: 18px; /* Adjust the font size as needed */
 }
+
+#user-cans {
+    font-size: 18px; /* Adjust the font size as needed */
+    margin-left: 10px; /* Add margin to separate credits from name */
+}
