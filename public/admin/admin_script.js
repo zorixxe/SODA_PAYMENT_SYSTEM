@@ -128,3 +128,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
     }
 });
+const manualLogoutButton = document.getElementById('logout-button');
+if (manualLogoutButton) {
+    manualLogoutButton.addEventListener('click', handleLogout);
+}
+
+function handleLogout() {
+    console.log('Logging out...');
+    localStorage.setItem('nfcId', ''); // Clear the NFC ID from local storage
+    window.location.href = '../index.html'; // Redirect to the index page
+}
+
