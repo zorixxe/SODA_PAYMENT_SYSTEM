@@ -44,12 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const nfcId = localStorage.getItem('nfcId');
             if (nfcId) {
                 try {
-                    const response = await fetch(`http://localhost:3000/get-credits/${encodeURIComponent(nfcId)}`);
-                    const data = await response.json();
-                    const userCredits = data.credits;
+                    // Fetch the user's credits
+                    const creditsResponse = await fetch(`http://localhost:3000/get-credits/${encodeURIComponent(nfcId)}`);
+                    const creditsData = await creditsResponse.json();
+                    const userCredits = creditsData.credits;
+    
+                    // Check if the user has enough credits
                     if (userCredits > 0) {
-                        // No need to calculate updatedCredits here
-                        // Just call the update endpoint
+                        // Update the credits and cans
                         const updateResponse = await fetch(`http://localhost:3000/update-credits/${encodeURIComponent(nfcId)}`, { method: 'PUT' });
                         if (updateResponse.ok) {
                             console.log('Credits updated successfully.');
@@ -68,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+    
     
 
     const manualLogoutButton = document.getElementById('logout-button');

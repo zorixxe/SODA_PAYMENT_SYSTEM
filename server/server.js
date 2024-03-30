@@ -93,6 +93,53 @@ app.get('/get-credits/:nfcId', async (req, res) => {
 
 
 
+app.put('/update-credits/:nfcId', async (req, res) => {
+  const nfcId = req.params.nfcId;
+
+  try {
+      // Start a database transaction
+      await pool.query('BEGIN');
+      
+      // Fetch the current user's credits and cans
+      const selectResult = await pool.query('SELECT credits, cans FROM soda WHERE id = $1 FOR UPDATE', [nfcId]);
+      if (selectResult.rows.length === 0) {
+          // If the user doesn't exist, rollback and return an error
+          await pool.query('ROLLBACK');
+          return res.status(404).json({ error: 'No record found with the given NFC ID' });
+      }
+
+      const currentCredits = selectResult.rows[0].credits;
+      const currentCans = selectResult.rows[0].cans;
+
+      // Update credits and cans, and commit the transaction
+      const updatedCredits = currentCredits - 1; // Subtract 1 credit
+      const updatedCans = currentCans + 1; // Increment cans by 1
+
+      // Ensure updatedCredits is not negative
+      if (updatedCredits < 0) {
+          await pool.query('ROLLBACK');
+          return res.status(400).json({ error: 'Insufficient credits' });
+      }
+
+      const updateQuery = 'UPDATE soda SET credits = $1, cans = $2 WHERE id = $3';
+      await pool.query(updateQuery, [updatedCredits, updatedCans, nfcId]);
+      await pool.query('COMMIT');
+
+      res.sendStatus(200);
+  } catch (err) {
+      // If any error occurs, rollback the transaction
+      await pool.query('ROLLBACK');
+      console.error('Database error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
+
+
+
+
 app.put('/modify-credits/:userId/:creditsToAdd', async (req, res) => {
   let userId = req.params.userId;
   let creditsToAdd = parseInt(req.params.creditsToAdd);
