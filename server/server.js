@@ -34,7 +34,8 @@ const pool = new Pool({
   CREATE TABLE IF NOT EXISTS soda ( -- no need for quotes if your table name is lowercase
       id varchar PRIMARY KEY,
       credits integer,
-      name text
+      name text,
+      admin boolean
   );
   `;
   
@@ -61,6 +62,21 @@ app.get('/get-user-names', async (req, res) => {
   }
 });
 
+app.get('/check-admin/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  try {
+      const queryResult = await client.query('SELECT admin FROM soda WHERE id = $1', [userId]);
+      if (queryResult.rows.length > 0) {
+          const isAdmin = queryResult.rows[0].admin;
+          res.json({ isAdmin });
+      } else {
+          res.status(404).json({ error: 'User not found' });
+      }
+  } catch (error) {
+      console.error('Error checking admin:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 app.get('/check-id/:nfcId', async (req, res) => {
   const nfcId = req.params.nfcId;
