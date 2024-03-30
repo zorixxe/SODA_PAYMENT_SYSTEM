@@ -48,28 +48,19 @@ pool.query(createTableQuery, (err, result) => {
 });
 
 
-app.get('/test-db', async (req, res) => {
-    try {
-      const queryResult = await pool.query('SELECT * FROM soda'); // Updated query to select all
-      res.json(queryResult.rows); // Send all rows as a response
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+
+
+// Endpoint to get all user names
+app.get('/get-user-names', async (req, res) => {
+  try {
+    const queryResult = await pool.query('SELECT id, name FROM soda ORDER BY name ASC');
+    res.json(queryResult.rows);
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-  app.get('/get-name/:id', async (req, res) => {
-    const id = req.params.id; // Get the ID from the request parameters
-    try {
-      const queryResult = await pool.query('SELECT name FROM soda WHERE id = $1', [id]);
-      if (queryResult.rows.length > 0) {
-        res.json({ name: queryResult.rows[0].name });
-      } else {
-        res.status(404).json({ error: 'No record found with the given ID' });
-      }
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-});
 
 app.get('/check-id/:nfcId', async (req, res) => {
   const nfcId = req.params.nfcId;
@@ -102,42 +93,42 @@ app.get('/get-credits/:nfcId', async (req, res) => {
 
 
 
-app.put('/update-credits/:nfcId', async (req, res) => {
-  const nfcId = req.params.nfcId;
-  try {
-      // Start a database transaction
-      await pool.query('BEGIN');
-      
-      // Fetch the current user's credits
-      const selectResult = await pool.query('SELECT credits FROM soda WHERE id = $1 FOR UPDATE', [nfcId]);
-      if (selectResult.rows.length === 0) {
-        // If the user doesn't exist, rollback and return an error
-        await pool.query('ROLLBACK');
-        return res.status(404).json({ error: 'No record found with the given NFC ID' });
-      }
+app.put('/modify-credits/:userId/:creditsToAdd', async (req, res) => {
+  let userId = req.params.userId;
+  let creditsToAdd = parseInt(req.params.creditsToAdd);
 
-      const currentCredits = selectResult.rows[0].credits;
-      if (currentCredits > 0) {
-        // Decrement credits by 1 and increment cans by 1
-        const updateCredits = currentCredits - 1;
-        const updateQuery = 'UPDATE soda SET credits = $1, cans = cans + 1 WHERE id = $2';
-        await pool.query(updateQuery, [updateCredits, nfcId]);
-        
-        // Commit the transaction
-        await pool.query('COMMIT');
+  // You might not need to sanitize userId if it's always an alphanumeric string
+  userId = sanitizeHtml(userId);
+
+  // Validate creditsToAdd to ensure it's a valid number after parsing
+  if (isNaN(creditsToAdd)) {
+    return res.status(400).send('Invalid credits amount');
+  }
+
+  console.log('Modifying credits for user ID:', userId);
+  console.log('Credits to add:', creditsToAdd);
+
+  try {
+    // Fetch the user's current credits using the id
+    const queryResult = await pool.query('SELECT credits FROM soda WHERE id = $1', [userId]);
+    console.log('Query result:', queryResult.rows);
+    if (queryResult.rows.length > 0) {
+        const currentCredits = queryResult.rows[0].credits;
+        const updatedCredits = currentCredits + creditsToAdd;
+        // Update user's credits in the database using the id
+        await pool.query('UPDATE soda SET credits = $1 WHERE id = $2', [updatedCredits, userId]);
+        console.log('Credits updated successfully.');
         res.sendStatus(200);
-      } else {
-        // If not enough credits, rollback and send an error
-        await pool.query('ROLLBACK');
-        res.status(400).json({ error: 'Insufficient credits' });
-      }
+    } else {
+        console.log('User ID not found.');
+        res.status(404).json({ error: 'User ID not found' });
+    }
   } catch (err) {
-      // If any error occurs, rollback the transaction
-      await pool.query('ROLLBACK');
-      console.error('Database error:', err);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error('Database error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 app.get('/get-user-info/:nfcId', async (req, res) => {
@@ -163,6 +154,8 @@ app.put('/modify-credits/:userName/:creditsToAdd', async (req, res) => {
   // Directly extracting parameters from the request
   let userName = req.params.userName;
   let creditsToAdd = parseInt(req.params.creditsToAdd);
+  console.log(`Executing query: SELECT credits FROM soda WHERE LOWER(name) = LOWER($1)`, userName.toLowerCase());
+
 
   // Sanitize userName to prevent XSS attacks
   userName = sanitizeHtml(userName, {
