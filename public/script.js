@@ -93,15 +93,29 @@ async function displayUserInfo(nfcId) {
         }
         const data = await response.json();
         const credits = data.credits;
-        const cans = data.cans; // Add this line to retrieve the cans
+        const cans = data.cans;
         const name = data.name;
+        const isAdmin = data.admin; // New line to retrieve admin status
+
         const creditsDisplay = document.getElementById('user-credits');
-        const cansDisplay = document.getElementById('user-cans'); // Make sure you have an element with this ID in your HTML
+        const cansDisplay = document.getElementById('user-cans');
         const nameDisplay = document.getElementById('user-name');
+        const adminButtonContainer = document.getElementById('admin-button-container'); // New line to get the container for admin button
         
         creditsDisplay.textContent = `Credits: ${credits}`;
-        cansDisplay.textContent = `Cans bought: ${cans}`; // Update this line to display the cans
+        cansDisplay.textContent = `Cans bought: ${cans}`;
         nameDisplay.textContent = `Name: ${name}`;
+
+        if (isAdmin) {
+            // Display the extra button for admins
+            const adminButton = document.createElement('button');
+            adminButton.textContent = 'Admin Function';
+            adminButton.addEventListener('click', () => {
+                // Handle admin function here
+                window.location.href = '../admin/admin.html';
+            });
+            adminButtonContainer.appendChild(adminButton);
+        }
     } catch (error) {
         console.error('Error fetching user info:', error);
     }

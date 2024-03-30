@@ -140,6 +140,8 @@ app.put('/update-credits/:nfcId', async (req, res) => {
 
 
 
+
+
 app.put('/modify-credits/:userId/:creditsToAdd', async (req, res) => {
   let userId = req.params.userId;
   let creditsToAdd = parseInt(req.params.creditsToAdd);
@@ -181,12 +183,13 @@ app.put('/modify-credits/:userId/:creditsToAdd', async (req, res) => {
 app.get('/get-user-info/:nfcId', async (req, res) => {
   const nfcId = req.params.nfcId;
   try {
-      const queryResult = await pool.query('SELECT name, credits, cans FROM soda WHERE id = $1', [nfcId]);
+      const queryResult = await pool.query('SELECT name, credits, cans, admin FROM soda WHERE id = $1', [nfcId]);
       if (queryResult.rows.length > 0) {
           const userInfo = {
               name: queryResult.rows[0].name,
               credits: queryResult.rows[0].credits,
-              cans: queryResult.rows[0].cans 
+              cans: queryResult.rows[0].cans,
+              admin: queryResult.rows[0].admin // Include the admin status
           };
           res.json(userInfo);
       } else {
