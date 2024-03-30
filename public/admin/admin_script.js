@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const addUserButton = document.getElementById('add-user');
     const modifyCreditsButton = document.getElementById('modify-credits');
     const exitButton = document.getElementById('exit-list');
-    exitButton.style.display = 'none';
 
+    exitButton.style.display = 'none'; // Ensure 'X' is hidden on load
 
     addUserButton.addEventListener('click', () => {
         const userName = prompt('Enter the name of the new user:');
@@ -36,59 +36,85 @@ document.addEventListener('DOMContentLoaded', (event) => {
     let userList = null; // Variable to store the user list element
 
     modifyCreditsButton.addEventListener('click', async () => {
-        // Hide the buttons
-        addUserButton.style.display = 'none';
-        modifyCreditsButton.style.display = 'none';
+        toggleUserList();
+    });
 
-        // If userList exists, remove it from the DOM
+    exitButton.addEventListener('click', () => {
+        toggleUserList();
+    });
+
+    async function toggleUserList() {
+        // Hide the buttons or show them depending on the state
+        const displayStyle = userList ? 'block' : 'none';
+        addUserButton.style.display = displayStyle;
+        modifyCreditsButton.style.display = displayStyle;
+
         if (userList) {
+            // If userList exists, remove it from the DOM
             userList.remove();
-            userList = null; // Reset userList to null
-            exitButton.style.display = 'none'; // Hide the exit button
-            return; // Exit the function
+            userList = null;
+            exitButton.style.display = 'none';
+            return;
         }
-    
-        // Fetch the list of names from the server
-        const response = await fetch(`http://localhost:3000/get-user-names`);
+
+        // Otherwise, create and show the user list
+        const response = await fetch('http://localhost:3000/get-user-names');
         const users = await response.json();
-    
-        // Create a list in the HTML document
         userList = document.createElement('ul');
         users.forEach(user => {
             const listItem = document.createElement('li');
             listItem.textContent = user.name;
             listItem.style.cursor = 'pointer';
-            listItem.addEventListener('click', () => modifyUserCredits(user.id, user.name)); // Function to modify credits
+            listItem.addEventListener('click', () => showCreditOptions(user.id, user.name));
             userList.appendChild(listItem);
         });
-    
-        // Append this list to the DOM or use it to replace content in an existing element
         document.querySelector('.admin-actions').appendChild(userList);
-        exitButton.style.display = 'block'; // Display the exit button
-    });
+        exitButton.style.display = 'block';
+    }
 
-    exitButton.addEventListener('click', () => {
-        // Show the buttons again
-        addUserButton.style.display = 'block';
-        modifyCreditsButton.style.display = 'block';
-    
-        // Remove the user list
-        if (userList) {
-            userList.remove();
-            userList = null;
-            exitButton.style.display = 'none'; // Hide the exit button
-        }
-    });
-    
-    
-    async function modifyUserCredits(userId, userName) {
-        const creditsToAdd = prompt(`Enter the amount of credits to add to ${userName}:`);
-        if (creditsToAdd && !isNaN(parseInt(creditsToAdd))) {
+    function showCreditOptions(userId, userName) {
+        // Create the scrollable list container
+        const creditListContainer = document.createElement('div');
+        creditListContainer.style.maxHeight = '200px';
+        creditListContainer.style.overflowY = 'auto';
+        creditListContainer.style.background = 'white';
+        creditListContainer.style.position = 'absolute';
+        creditListContainer.style.left = '50%';
+        creditListContainer.style.top = '50%';
+        creditListContainer.style.transform = 'translate(-50%, -50%)';
+        creditListContainer.style.padding = '10px';
+        creditListContainer.style.border = '1px solid black';
+        creditListContainer.style.zIndex = '10';
+
+        // Array of predefined credit amounts
+        const creditOptions = [5, 10, 15, 20, 25, 30, 35, 40, 50];
+
+        // Add each credit option as an item in the list
+        creditOptions.forEach(credit => {
+            const creditItem = document.createElement('div');
+            creditItem.textContent = `€${credit}`;
+            creditItem.style.cursor = 'pointer';
+            creditItem.style.padding = '10px';
+            creditItem.style.borderBottom = '1px solid #ccc';
+            creditItem.addEventListener('click', () => {
+                creditListContainer.remove(); // Remove list after selection
+                modifyUserCredits(userId, userName, credit); // Proceed to modify credits
+            });
+            creditListContainer.appendChild(creditItem);
+        });
+
+        // Append the credit list to the body
+        document.body.appendChild(creditListContainer);
+    }
+
+    // Function to modify user credits
+    async function modifyUserCredits(userId, userName, creditsToAdd) {
+        if (creditsToAdd) {
             // Send a request to the server to modify the user's credits
-            fetch(`http://localhost:3000/modify-credits/${encodeURIComponent(userId)}/${parseInt(creditsToAdd)}`, { method: 'PUT' })
+            fetch(`http://localhost:3000/modify-credits/${encodeURIComponent(userId)}/${creditsToAdd}`, { method: 'PUT' })
                 .then(response => {
                     if (response.ok) {
-                        alert(`Credits successfully added to ${userName}.`);
+                        alert(`€${creditsToAdd} successfully added to ${userName}.`);
                     } else {
                         alert(`Failed to add credits to ${userName}.`);
                     }
@@ -98,7 +124,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     alert('An error occurred while modifying credits.');
                 });
         } else {
-            alert('Invalid input. Please enter a valid number for credits.');
+            alert('Please select an amount to add credits.');
         }
     }
 });
