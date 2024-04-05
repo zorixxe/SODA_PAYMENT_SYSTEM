@@ -31,13 +31,14 @@ const pool = new Pool({
 
 
   const createTableQuery = `
-  CREATE TABLE IF NOT EXISTS soda ( -- no need for quotes if your table name is lowercase
+  CREATE TABLE IF NOT EXISTS soda (
       id varchar PRIMARY KEY,
       credits integer,
       name text,
-      admin boolean
+      admin boolean DEFAULT false -- Set the default value to false
   );
   `;
+  
   
 
 pool.query(createTableQuery, (err, result) => {
@@ -65,7 +66,7 @@ app.get('/get-user-names', async (req, res) => {
 app.get('/check-admin/:userId', async (req, res) => {
   const userId = req.params.userId;
   try {
-      const queryResult = await client.query('SELECT admin FROM soda WHERE id = $1', [userId]);
+      const queryResult = await pool.query('SELECT admin FROM soda WHERE id = $1', [userId]);
       if (queryResult.rows.length > 0) {
           const isAdmin = queryResult.rows[0].admin;
           res.json({ isAdmin });
