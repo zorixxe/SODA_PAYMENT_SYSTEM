@@ -27,7 +27,7 @@ This document provides detailed information on the setup, configuration, and usa
    Navigate to the project directory and install the required npm packages:
 
    ```bash
-   cd sodamachine
+   cd SODA_PAYMENT_SYSTEM
    npm install
    ```
 
