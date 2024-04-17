@@ -28,7 +28,7 @@ This document provides detailed information on the setup, configuration, and usa
 
    ```bash
    cd SODA_PAYMENT_SYSTEM
-   npm install
+   npm install i
    ```
 
 3. **Database Configuration**
